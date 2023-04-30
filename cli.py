@@ -70,6 +70,7 @@ BARKEEPER= 'Ɓ'
 FIREPLACE_ICONS = ['a', '&']
 LIGHTING_ICONS = ['=', '≡']
 LIGHTING_COLOR = Fore.YELLOW
+version = 'v1.2'
 
 # Define the list of available colors
 AVAILABLE_COLORS = [Fore.BLUE, Fore.CYAN, Fore.GREEN, Fore.MAGENTA, Fore.YELLOW, Fore.LIGHTCYAN_EX, Fore.LIGHTGREEN_EX, Fore.LIGHTMAGENTA_EX, Fore.LIGHTYELLOW_EX]
@@ -135,6 +136,23 @@ def place_characters_around_table(table_position):
             game_state['tavern_layout'][y][x] = (letter, color)
 
 
+def format_time(minutes):
+    hours = minutes // 60
+    minutes %= 60
+    hours %= 24  # Add this line to handle midnight
+    return f"{hours:02d}:{minutes:02d}"
+
+
+def get_period(minutes):
+    if 19 * 60 <= minutes < 24 * 60:
+        return "Evening"
+    elif 24 * 60 <= minutes < 25 * 60:
+        return "Midnight"
+    elif 25 * 60 <= minutes < 26 * 60:
+        return "Morning"
+    else:
+        return ""  # empty
+
 
 # Define the initial game state
 game_state = {
@@ -147,18 +165,19 @@ game_state = {
     'pause_menu_options': ['Resume', 'Exit'],
     'pause_menu_selected': 0,
     'freeze_scene': False, 
-    'awaiting_message_input': False,
-    'previous_player_position': (1, 1),
+    'current_time': 19 * 60,
+    'input_mode': 'game',
+    'previous_player_position': (1, 2),
     'lighting_frame': 0,
     'journal_open': False,  # Add this line
     'journal_selected': 0, 
     'tavern_layout': [
-        ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '-', '#'],
-        ['#', '@', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '#'],
-        ['#', ' ', ' ', ' ', ' ', ' ', ' ', '■', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '■', ' ', ' ', ' ', '#'],
-        ['#', ' ', '■', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '■', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '#'],
-        ['#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '#'],
-        ['#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '■', '#'],
+        ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '-','-', '#', '#','#', '#','#','#'],
+        ['#', '@', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ',' ','#'],
+        ['#', ' ', ' ', ' ', ' ', ' ', ' ', '■', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '■', ' ', ' ', ' ', ' ', ' ', ' ','■', ' ',' ','#'],
+        ['#', ' ', '■', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '■', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ',' ','#'],
+        ['#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ',' ','#'],
+        ['#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '■', ' ', ' ', '#', '#', '#','#','#', '#','#'],
         ['#', '|', '|', '|', '|', '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '#'],
         ['#', '🐱 ', 'Ɓ', '','', '|',' ', ' ',' ', ' ', ' ', ' ', '■', ' ', ' ', '#', ' ', ' ', ' ', '#'],
         ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
@@ -353,23 +372,29 @@ def barkeeper_chat_ai_response(message):
 def chat_with_barkeeper():
     clear_screen()
     print_chat_frame_with_beer_mug()
+    
 
     if 'username' in game_state:
         username = game_state['username']
         print(f"Barkeeper: Welcome back, {username}! What can I get for you today?")
     else:
+
         username = custom_input("Barkeeper: Welcome to the Command Line Inn! What's your name? ")
         game_state['username'] = username
         print(f"\nBarkeeper: Nice to meet you, {username}! Enjoy your stay!")
 
+
     # Start a conversation with the barkeeper
     while True:
+
         user_message = custom_input("You: ")
         if user_message.lower() == "bye" or user_message.lower() == "goodbye" or user_message.lower() == "exit" or user_message.lower() == "see you":
             break
 
         barkeeper_response = barkeeper_chat_ai_response(user_message)
         print(f"\nBarkeeper: {barkeeper_response}\n")
+
+    
 
 
 
@@ -378,11 +403,13 @@ def interact_with_character(x, y):
 
     if player_x == 4 and player_y == 5:
         game_state['freeze_scene'] = True  # Freeze the scene
+        game_state['input_mode'] = 'conversation'
         clear_screen()
         chat_with_barkeeper()
         clear_screen()
         render_game()  # Render the game again after the conversation
         game_state['freeze_scene'] = False  # Unfreeze the scene
+        game_state['input_mode'] = 'game'
 
     elif player_x == 1 and player_y == 5:
         game_state['interaction_message'] = f"Mimi: Meow Meow!"
@@ -392,6 +419,7 @@ def interact_with_character(x, y):
         for nx, ny in neighbors:
             cell = game_state['tavern_layout'][ny][nx]
             if isinstance(cell, tuple) and cell[0] in CHARACTERS:
+                game_state['input_mode'] = 'conversation'
                 game_state['freeze_scene'] = True
                 icon = cell[0]
                 if icon in CHARACTER_CONVERSATION_HISTORY:
@@ -408,10 +436,15 @@ def interact_with_character(x, y):
                 clear_screen()
                 render_game()  # Render the game again after the conversation
                 game_state['freeze_scene'] = False  # Unfreeze the scene
+                game_state['input_mode'] = 'game'
                 break
 
 def render_game():
     clear_screen()
+    current_time = game_state['current_time']
+    period = get_period(current_time)
+    print(f"{format_time(current_time)} {period}")
+    print()
     for row in game_state['tavern_layout']:
         for cell in row:
             if isinstance(cell, tuple):
@@ -453,9 +486,11 @@ def update_fireplace():
     # Update the fireplace frame for the next iteration
     game_state['fireplace_frame'] = (current_frame + 1) % len(FIREPLACE_ICONS)
 
+
+
 def render_pause_menu():
     clear_screen()
-    print("COMMAND LINE INN v1")
+    print(f"COMMAND LINE INN {version}")
     print("Game Paused")
     print("Press 'w' or 's' to navigate the menu")
     print("Press 'f' to select an option")
@@ -471,7 +506,7 @@ def render_pause_menu():
 
 def render_journal():
     clear_screen()
-    print("COMMAND LINE INN v1")
+    print(f"COMMAND LINE INN {version}")
     print("Journal")
     print("Press 'w' or 's' to navigate the journal")
     print("Press 'f' to view character description")
@@ -498,7 +533,7 @@ def update_journal(key):
         selected_icon = character_list[game_state['journal_selected']]
         name, description = CHARACTER_DESC[selected_icon]
         clear_screen()
-        print(f"{description}")
+        print(f"    {description}")
         input("Press Enter to go back to the journal.")
         render_journal()
     elif key == 'j':
@@ -541,12 +576,9 @@ def update_pause_menu(key):
             
 
 def on_key_release(key):
-    if game_state['awaiting_message_input']:
-        if key == keyboard.Key.enter:
-            game_state['awaiting_message_input'] = False
-            return
-        else:
-            return
+    if game_state['input_mode'] != 'game':
+        return
+    
     if game_state['journal_open']:
         try:
             if key.char == 'j':
@@ -572,23 +604,25 @@ def on_key_release(key):
             pass
         render_pause_menu()
         return
+    if game_state['input_mode'] == 'conversation':
+        return  # Do not process movement keys during conversation
 
     try:
-        if key.char == 'w':
+        if key.char == 'w'and game_state['input_mode'] == 'game' :
             move_player(0, -1)
-        elif key.char == 'a':
+        elif key.char == 'a'and game_state['input_mode'] == 'game':
             move_player(-1, 0)
-        elif key.char == 's':
+        elif key.char == 's'and game_state['input_mode'] == 'game':
             move_player(0, 1)
-        elif key.char == 'd':
+        elif key.char == 'd'and game_state['input_mode'] == 'game':
             move_player(1, 0)
-        elif key.char == 'f':
+        elif key.char == 'f'and game_state['input_mode'] == 'game':
             interact_with_character(*game_state['player_position'])
-        elif key.char == 'p':
+        elif key.char == 'p'and game_state['input_mode'] == 'game':
             game_state['game_paused'] = True
             game_state['freeze_scene'] = True
             render_pause_menu()
-        elif key.char == 'j':
+        elif key.char == 'j' and game_state['input_mode'] == 'game':
             game_state['journal_open'] = True
             game_state['freeze_scene'] = True
             render_journal()
@@ -609,17 +643,32 @@ def main():
             if cell == TABLE_ICON:
                 place_characters_around_table((x, y))
     render_game()
-    with keyboard.Listener(on_release=on_key_release) as listener:
-        while True:
+    last_time_update = time.time()
+    listener = keyboard.Listener(on_release=on_key_release)
+    listener.start()
+    while True:
+        if not game_state['freeze_scene']:
+            update_fireplace()
+            render_game()
+            time.sleep(0.5)
+        current_time = time.time()
+        if current_time - last_time_update >= 10:
             if not game_state['freeze_scene']:
-                update_fireplace()
-                render_game()
-                time.sleep(0.5)
-            
+                game_state['current_time'] += 10  # Increment by 10 minutes in game time
+                if game_state['current_time'] >= 26 * 60:  # Wrap around at 2:00 AM (26 * 60)
+                    game_state['current_time'] = 19 * 60
+            last_time_update = current_time
 
-            if game_state['exit_game']:
-                break
+        if game_state['input_mode'] == 'conversation':
+            listener.stop()
+        else:
+            if not listener.running:
+                listener = keyboard.Listener(on_release=on_key_release)
+                listener.start()
 
+        if game_state['exit_game']:
+            listener.stop()
+            break
 
 if __name__ == '__main__':
     main()
