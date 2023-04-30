@@ -142,6 +142,10 @@ game_state = {
     'lighting': [[0 for _ in range(20)] for _ in range(9)],
     'fireplace_position': (16, 7),
     'fireplace_frame': 0,
+    'game_paused': False,
+    'exit_game': False,
+    'pause_menu_options': ['Resume', 'Exit'],
+    'pause_menu_selected': 0,
     'freeze_scene': False, 
     'awaiting_message_input': False,
     'previous_player_position': (1, 1),
@@ -340,6 +344,8 @@ def barkeeper_chat_ai_response(message):
     conversation_history.append(f"Barkeeper: {reply}")
 
     return reply
+
+
 def chat_with_barkeeper():
     clear_screen()
     print_chat_frame_with_beer_mug()
@@ -457,15 +463,56 @@ def move_player(dx, dy):
         if (x, y) != (new_x, new_y):
             game_state['interaction_message'] = ''
 
+def render_pause_menu():
+    clear_screen()
+    game_state['freeze_scene'] = True
+    print("COMMAND LINE INN v1")
+    print("Game Paused")
+    print("Press 'w' or 's' to navigate the menu")
+    print("Press 'f' to select an option")
+    print()
+
+    menu_options = ['Resume', 'Exit']
+    for i, option in enumerate(menu_options):
+        if i == game_state['pause_menu_selected']:
+            print(f"> {option}")
+        else:
+            print(f"  {option}")
+
+
+
+def update_pause_menu(key):
+    if key == 'w':
+        game_state['pause_menu_selected'] = (game_state['pause_menu_selected'] - 1) % len(game_state['pause_menu_options'])
+    elif key == 's':
+        game_state['pause_menu_selected'] = (game_state['pause_menu_selected'] + 1) % len(game_state['pause_menu_options'])
+    elif key == 'f':
+        selected_option = game_state['pause_menu_options'][game_state['pause_menu_selected']]
+        if selected_option == 'Exit':
+            game_state['exit_game'] = True  # Exit the game
+            
+        else:
+            game_state['freeze_scene'] = False
+            game_state['game_paused'] = False
 
 def on_key_release(key):
-    
     if game_state['awaiting_message_input']:
         if key == keyboard.Key.enter:
             game_state['awaiting_message_input'] = False
             return
         else:
-            return  # Add this line to return immediately if awaiting_message_input is True
+            return
+
+    if game_state['game_paused']:
+        try:
+            if key.char == 'p':
+                game_state['game_paused'] = False
+                return
+            update_pause_menu(key.char)
+        except AttributeError:
+            pass
+        render_pause_menu()
+        return
 
     try:
         if key.char == 'w':
@@ -478,16 +525,18 @@ def on_key_release(key):
             move_player(1, 0)
         elif key.char == 'f':
             interact_with_character(*game_state['player_position'])
-    
+        elif key.char == 'p':
+            game_state['game_paused'] = True
+            render_pause_menu()
+            return
+
     except AttributeError:
         pass
 
     render_game()
 
-    # Clear input from the terminal input buffer
     while sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
         sys.stdin.readline()
-
 
 def main():
     # Call place_characters_around_table for every table in the tavern layout
@@ -502,6 +551,9 @@ def main():
                 update_fireplace()
                 render_game()
                 time.sleep(0.5)
+
+            if game_state['exit_game']:
+                break
 
 
 if __name__ == '__main__':
