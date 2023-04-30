@@ -150,6 +150,8 @@ game_state = {
     'awaiting_message_input': False,
     'previous_player_position': (1, 1),
     'lighting_frame': 0,
+    'journal_open': False,  # Add this line
+    'journal_selected': 0, 
     'tavern_layout': [
         ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '-', '#'],
         ['#', '@', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '#'],
@@ -180,55 +182,57 @@ def generate_fantasy_name(letter):
 
 
 CHARACTER_CONVERSATION_HISTORY = {}
+CHARACTER_DESC = {}
 
 def generate_fantasy_dialogue(name):
     prompts = [
-f"You're a gruff dwarf named {name}, sitting alone at the bar, nursing a mug of ale. When I approach you, how do you greet me?",
-f"You're a charming half-elf named {name}, playing a game of cards with the other patrons. When I approach you to join the game, how do you greet me?",
-f"You're a stoic human named {name}, sitting in a corner of the tavern, reading a book. When I approach you, how do you greet me?",
-f"You're a mischievous halfling named {name}, sitting at the bar and eavesdropping on the other patrons' conversations. When I approach you, how do you greet me?",
-f"You're a curious gnome named {name}, sitting at a table with a pile of books and scrolls. When I approach you to ask about your research, how do you greet me?",
-f"You're a surly half-orc named {name}, sitting alone at a table, sharpening your weapon. When I approach you, how do you greet me?",
-f"You're a flamboyant tiefling named {name}, performing a fire-dance for the other patrons. When I approach you after your performance, how do you greet me?",
-f"You're a reserved elf named {name}, sitting at the bar, sipping on a glass of wine. When I approach you, how do you greet me?",
-f"You're a jovial half-elf named {name}, sitting at a table, enjoying a meal with a group of friends. When I approach you, how do you greet me?",
-f"You're a stoic dragonborn named {name}, keeping watch over the tavern's patrons. When I approach you, how do you greet me?",
-f"You're a mysterious halfling named {name}, sitting in a dark corner of the tavern. When I approach you, how do you greet me?",
-f"You're a grizzled dwarf named {name}, sitting at the bar and regaling the other patrons with tall tales. When I approach you, how do you greet me?",
-f"You're a mischievous tiefling named {name}, playing pranks on the other patrons. When I confront you about it, how do you greet me?",
-f"You're a dour human named {name}, sitting alone at a table, brooding. When I approach you, how do you greet me?",
-f"You're a gregarious gnome named {name}, sitting at the bar, chatting with the other patrons. When I approach you, how do you greet me?",
-f"You're a reserved half-elf named {name}, sitting at a table, quietly enjoying a drink. When I approach you, how do you greet me?",
-f"You're a surly half-orc named {name}, sitting at a table, playing a game of darts. When I approach you to join the game, how do you greet me?",
-f"You're a friendly elf named {name}, sitting at the bar, buying rounds of drinks for the other patrons. When I approach you, how do you greet me?",
-f"You're a jovial dwarf named {name}, sitting at a table with a group of friends, singing bawdy songs. When I approach you, how do you greet me?",
-f"You're a curious half-elf named {name}, sitting at a table, studying a map of the surrounding area. When I approach you, how do you greet me?",
-f"You're a sly gnome named {name}, sitting at the bar, quietly observing the other patrons. When I approach you, how do you greet me?",
-f"You're a fierce dragonborn named {name}, sitting at a table with a group of adventurers. When I approach you, how do you greet me?",
-f"You're a friendly halfling named {name}, sitting at the bar and striking up conversations with the other patrons. When I approach you, how do you greet me?",
-f"You're a brooding tiefling named {name}, sitting alone at a table and nursing a drink. When I approach you, how do you greet me?",
-f"You're a mischievous gnome named {name}, playing pranks on the other patrons. When I confront you about it, how do you greet me?",
-f"You're a stoic dwarf named {name}, sitting at the bar and keeping a watchful eye on the other patrons. When I approach you, how do you greet me?",
-f"You're a curious half-elf named {name}, sitting at a table with a pile of notes and sketches. When I approach you to ask about your work, how do you greet me?",
-f"You're a surly half-orc named {name}, sitting alone in a dark corner of the tavern. When I approach you, how do you greet me?",
-f"You're a jovial human named {name}, sitting at the bar and buying rounds of drinks for the other patrons. When I approach you, how do you greet me?",
-f"You're a flamboyant elf named {name}, performing a sword dance for the other patrons. When I approach you after your performance, how do you greet me?",
-f"You're a mysterious tiefling named {name}, sitting at the bar and keeping to yourself. When I approach you, how do you greet me?",
-f"You're a reserved dwarf named {name}, sitting at a table with a group of friends and enjoying a quiet drink. When I approach you, how do you greet me?",
-f"You're a mischievous halfling named {name}, sitting at the bar and making witty comments to the other patrons. When I approach you, how do you greet me?",
-f"You're a stoic half-elf named {name}, sitting alone at a table and watching the door. When I approach you, how do you greet me?",
-f"You're a friendly gnome named {name}, sitting at the bar and striking up conversations with anyone who sits next to you. When I approach you, how do you greet me?",
-f"You're a surly dragonborn named {name}, sitting alone at the bar and nursing a glass of ale. When I approach you, how do you greet me?",
-f"You're a curious elf named {name}, sitting at a table with a map of the surrounding area. When I approach you to ask about it, how do you greet me?",
-f"You're a jovial halfling named {name}, sitting at a table with a group of friends and telling funny stories. When I approach you, how do you greet me?",
-f"You're a brooding half-orc named {name}, sitting alone at the bar and staring into your drink. When I approach you, how do you greet me?",
-f"You're a flamboyant gnome named {name}, performing a juggling act for the other patrons. When I approach you after your performance, how do you greet me?"
+f"You're a gruff dwarf named {name}, sitting alone at the bar, nursing a mug of ale.",
+f"You're a charming half-elf named {name}, playing a game of cards with the other patrons.",
+f"You're a stoic human named {name}, sitting in a corner of the tavern, reading a book.",
+f"You're a mischievous halfling named {name}, sitting at the bar and eavesdropping on the other patrons' conversations.",
+f"You're a curious gnome named {name}, sitting at a table with a pile of books and scrolls.",
+f"You're a surly half-orc named {name}, sitting alone at a table, sharpening your weapon. , ",
+f"You're a flamboyant tiefling named {name}, performing a fire-dance for the other patrons.",
+f"You're a reserved elf named {name}, sitting at the bar, sipping on a glass of wine.",
+f"You're a jovial half-elf named {name}, sitting at a table, enjoying a meal with a group of friends.",
+f"You're a stoic dragonborn named {name}, keeping watch over the tavern's patrons ",
+f"You're a mysterious halfling named {name}, sitting in a dark corner of the tavern.",
+f"You're a grizzled dwarf named {name}, sitting at the bar and regaling the other patrons with tall tales.",
+f"You're a mischievous tiefling named {name}, playing pranks on the other patrons. When I confront you about it",
+f"You're a dour human named {name}, sitting alone at a table, brooding.",
+f"You're a gregarious gnome named {name}, sitting at the bar, chatting with the other patrons.",
+f"You're a reserved half-elf named {name}, sitting at a table, quietly enjoying a drink.",
+f"You're a surly half-orc named {name}, sitting at a table, playing a game of darts.  to join the game",
+f"You're a friendly elf named {name}, sitting at the bar, buying rounds of drinks for the other patrons.",
+f"You're a jovial dwarf named {name}, sitting at a table with a group of friends, singing bawdy songs.",
+f"You're a curious half-elf named {name}, sitting at a table, studying a map of the surrounding area.",
+f"You're a sly gnome named {name}, sitting at the bar, quietly observing the other patrons.",
+f"You're a fierce dragonborn named {name}, sitting at a table with a group of adventurers.",
+f"You're a friendly halfling named {name}, sitting at the bar and striking up conversations with the other patrons.",
+f"You're a brooding tiefling named {name}, sitting alone at a table and nursing a drink.",
+f"You're a mischievous gnome named {name}, playing pranks on the other patrons. When I confront you about it",
+f"You're a stoic dwarf named {name}, sitting at the bar and keeping a watchful eye on the other patrons.",
+f"You're a curious half-elf named {name}, sitting at a table with a pile of notes and sketches.  to ask about your work",
+f"You're a surly half-orc named {name}, sitting alone in a dark corner of the tavern.",
+f"You're a jovial human named {name}, sitting at the bar and buying rounds of drinks for the other patrons.",
+f"You're a flamboyant elf named {name}, performing a sword dance for the other patrons.",
+f"You're a mysterious tiefling named {name}, sitting at the bar and keeping to yourself.",
+f"You're a reserved dwarf named {name}, sitting at a table with a group of friends and enjoying a quiet drink.",
+f"You're a mischievous halfling named {name}, sitting at the bar and making witty comments to the other patrons.",
+f"You're a stoic half-elf named {name}, sitting alone at a table and watching the door.",
+f"You're a friendly gnome named {name}, sitting at the bar and striking up conversations with anyone who sits next to you.",
+f"You're a surly dragonborn named {name}, sitting alone at the bar and nursing a glass of ale.",
+f"You're a curious elf named {name}, sitting at a table with a map of the surrounding area.",
+f"You're a jovial halfling named {name}, sitting at a table with a group of friends and telling funny stories.",
+f"You're a brooding half-orc named {name}, sitting alone at the bar and staring into your drink.",
+f"You're a flamboyant gnome named {name}, performing a juggling act for the other patrons."
 ]
     initial_prompt = random.choice(prompts).format(name=name)
 
-    initial_dialogue = character_chat_ai_response(name, initial_prompt + 'you CANNOT assume a role of tavern staff')
+    initial_dialogue = character_chat_ai_response(name, initial_prompt + 'how do you greet me? you CANNOT assume a role of tavern staff')
+    description = character_chat_ai_response(name, initial_prompt + 'give a brief backstory in the third person for the character you are assuming. you CANNOT assume a role of tavern staff')
 
-    return initial_dialogue 
+    return initial_dialogue , description
 
 def character_chat_ai_response(character_name, message):
     global CHARACTER_CONVERSATION_HISTORY
@@ -394,8 +398,9 @@ def interact_with_character(x, y):
                     name, dialogue = CHARACTER_CONVERSATION_HISTORY[icon][0], CHARACTER_CONVERSATION_HISTORY[icon][1]
                 else:
                     name = generate_fantasy_name(icon)
-                    dialogue = generate_fantasy_dialogue(name)
+                    dialogue, description = generate_fantasy_dialogue(name)
                     CHARACTER_CONVERSATION_HISTORY[icon] = [name, dialogue]
+                    CHARACTER_DESC[icon] = [name, description]
 
                   # Freeze the scene
                 clear_screen()
@@ -448,6 +453,59 @@ def update_fireplace():
     # Update the fireplace frame for the next iteration
     game_state['fireplace_frame'] = (current_frame + 1) % len(FIREPLACE_ICONS)
 
+def render_pause_menu():
+    clear_screen()
+    print("COMMAND LINE INN v1")
+    print("Game Paused")
+    print("Press 'w' or 's' to navigate the menu")
+    print("Press 'f' to select an option")
+    print()
+
+    menu_options = ['Resume', 'Exit']
+    for i, option in enumerate(menu_options):
+        if i == game_state['pause_menu_selected']:
+            print(f"> {option}")
+        else:
+            print(f"  {option}")
+
+
+def render_journal():
+    clear_screen()
+    print("COMMAND LINE INN v1")
+    print("Journal")
+    print("Press 'w' or 's' to navigate the journal")
+    print("Press 'f' to view character description")
+    print("Press 'j' to close the journal")
+    print()
+
+    character_list = list(CHARACTER_DESC.keys())
+
+    for i, character_icon in enumerate(character_list):
+        name = CHARACTER_DESC[character_icon][0]
+        if i == game_state['journal_selected']:
+            print(f"> {name}")
+        else:
+            print(f"  {name}")
+
+def update_journal(key):
+    character_list = list(CHARACTER_DESC.keys())
+
+    if key == 'w':
+        game_state['journal_selected'] = (game_state['journal_selected'] - 1) % len(character_list)
+    elif key == 's':
+        game_state['journal_selected'] = (game_state['journal_selected'] + 1) % len(character_list)
+    elif key == 'f':
+        selected_icon = character_list[game_state['journal_selected']]
+        name, description = CHARACTER_DESC[selected_icon]
+        clear_screen()
+        print(f"{description}")
+        input("Press Enter to go back to the journal.")
+        render_journal()
+    elif key == 'j':
+        clear_screen()
+        render_game()
+        game_state['journal_open'] = False
+
 
 def move_player(dx, dy):
     x, y = game_state['player_position']
@@ -463,22 +521,6 @@ def move_player(dx, dy):
         if (x, y) != (new_x, new_y):
             game_state['interaction_message'] = ''
 
-def render_pause_menu():
-    clear_screen()
-    game_state['freeze_scene'] = True
-    print("COMMAND LINE INN v1")
-    print("Game Paused")
-    print("Press 'w' or 's' to navigate the menu")
-    print("Press 'f' to select an option")
-    print()
-
-    menu_options = ['Resume', 'Exit']
-    for i, option in enumerate(menu_options):
-        if i == game_state['pause_menu_selected']:
-            print(f"> {option}")
-        else:
-            print(f"  {option}")
-
 
 
 def update_pause_menu(key):
@@ -491,9 +533,12 @@ def update_pause_menu(key):
         if selected_option == 'Exit':
             game_state['exit_game'] = True  # Exit the game
             
-        else:
+        elif selected_option == 'Resume':
+            clear_screen()
+            render_game()
             game_state['freeze_scene'] = False
             game_state['game_paused'] = False
+            
 
 def on_key_release(key):
     if game_state['awaiting_message_input']:
@@ -502,12 +547,26 @@ def on_key_release(key):
             return
         else:
             return
-
+    if game_state['journal_open']:
+        try:
+            if key.char == 'j':
+                clear_screen()
+                render_game()
+                game_state['journal_open'] = False
+                game_state['freeze_scene'] = False
+            update_journal(key.char)
+        except AttributeError:
+            pass
+        render_journal()
+        return
+    
     if game_state['game_paused']:
         try:
             if key.char == 'p':
+                clear_screen()
+                render_game()
+                game_state['freeze_scene'] = False
                 game_state['game_paused'] = False
-                return
             update_pause_menu(key.char)
         except AttributeError:
             pass
@@ -527,8 +586,13 @@ def on_key_release(key):
             interact_with_character(*game_state['player_position'])
         elif key.char == 'p':
             game_state['game_paused'] = True
+            game_state['freeze_scene'] = True
             render_pause_menu()
-            return
+        elif key.char == 'j':
+            game_state['journal_open'] = True
+            game_state['freeze_scene'] = True
+            render_journal()
+        return
 
     except AttributeError:
         pass
@@ -551,6 +615,7 @@ def main():
                 update_fireplace()
                 render_game()
                 time.sleep(0.5)
+            
 
             if game_state['exit_game']:
                 break
